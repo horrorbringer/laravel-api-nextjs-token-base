@@ -2,61 +2,56 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\UpdateProductRequest;
+use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Services\ProductService;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        private ProductService $productService
+    ){}
+
     public function index(Request $request)
     {
-          return Product::query()
-        ->when(
-            $request->search,
-            fn ($q) => $q->where(
-                'name',
-                'like',
-                '%' . $request->search . '%'
+         return ProductResource::collection(
+            $this->productService->getPaginatedProducts(
+                $request->query('search')
             )
-        )
-        ->latest()
-        ->paginate(10);
+        );
     }
 
-    public function store(Request $request)
+    public function store(StoreProductRequest $request)
     {
-        $data = $request->validate([
-            'name' => ['required'],
-            'price' => ['required', 'numeric'],
-            'description' => ['nullable'],
-        ]);
-
-        return Product::create($data);
+        return new ProductResource(
+            $this->productService->createProduct($request->validated())
+        );
     }
 
     public function show(Product $product)
     {
-        return $product;
+        return new ProductResource($product);
     }
 
-    public function update(Request $request, Product $product)
+    public function update(UpdateProductRequest $request, Product $product)
     {
-        $data = $request->validate([
-            'name' => ['required'],
-            'price' => ['required', 'numeric'],
-            'description' => ['nullable'],
-        ]);
-
-        $product->update($data);
-
-        return $product;
+          return new ProductResource(
+            $this->productService->updateProduct(
+                $product,
+                $request->validated()
+            )
+        );
     }
 
     public function destroy(Product $product)
     {
-        $product->delete();
+        $this->productService->deleteProduct($product);
 
         return response()->json([
-            'message' => 'Product deleted',
+            'message' => 'Product deleted successfully',
         ]);
     }
 }

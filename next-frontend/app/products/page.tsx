@@ -5,6 +5,8 @@ import { PaginatedResponse } from "@/types/pagination";
 import CreateProductForm from "./CreateProductForm";
 import DeleteButton from "./DeleteButton";
 import SearchForm from "./SearchForm";
+import { ProductService } from "@/services/product-service";
+import Pagination from "./Pagination";
 
 export default async function ProductsPage({
   searchParams,
@@ -16,23 +18,19 @@ export default async function ProductsPage({
 }) {
   const params = await searchParams;
 
-  const search = params.search ?? "";
-  const page = params.page ?? "1";
 
   const query = new URLSearchParams({
-  search,
-  page,
-}).toString();
+    search: params.search ?? "",
+    page: params.page ?? "1",
+  }).toString();
 
-  const products: PaginatedResponse<Product> = await apiFetch(
-    `/products?${query}`
-  );
+  const products = await ProductService.getAll(query);
 
   return (
     <div className="space-y-6">
       <CreateProductForm />
 
-      <SearchForm defaultValue={search} />
+      <SearchForm defaultValue={params?.search} />
 
       <div className="rounded border">
         {products.data.map((product) => (
@@ -57,23 +55,12 @@ export default async function ProductsPage({
         ))}
       </div>
 
-      <div className="flex gap-3">
-        {products.prev_page_url && (
-          <Link href={`/products?search=${search}&page=${Number(page) - 1}`}>
-            Previous
-          </Link>
-        )}
+       <Pagination
+        currentPage={products.meta.current_page}
+        lastPage={products.meta.last_page}
+        search={params?.search}
+      />
 
-        <span>
-          Page {products.current_page} of {products.last_page}
-        </span>
-
-        {products.next_page_url && (
-          <Link href={`/products?search=${search}&page=${Number(page) + 1}`}>
-            Next
-          </Link>
-        )}
-      </div>
     </div>
   );
 }

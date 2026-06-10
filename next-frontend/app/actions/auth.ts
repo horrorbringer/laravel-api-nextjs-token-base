@@ -1,6 +1,7 @@
 "use server";
 
 import { apiFetch } from "@/lib/api";
+import { AuthService } from "@/services/auth-service";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -43,10 +44,10 @@ export async function loginAction(
 }
 
 export async function logoutAction() {
-  await apiFetch("/logout", {
-    method: "POST",
-  });
-  
+  try {
+    await AuthService.logout();
+  } catch {}
+
   const cookieStore = await cookies();
   cookieStore.delete("token");
 
